@@ -1,0 +1,8 @@
+				Quarkus Assignments
+
+
+Task : 1 
+ Create Quarkus Projects  using cli,mvn(if you have maven),template
+ Test project
+ Test HotReloading Feature
+ 
