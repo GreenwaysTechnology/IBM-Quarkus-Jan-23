@@ -1,0 +1,12 @@
+
+				 Quarkus
+.....................................................................................
+
+Lab setup:
+..........
+
+1.JDK 11 - open jdk or oracle jdk
+2.IDE - intellj idea
+3.Docker https://docs.docker.com/desktop/install/windows-install/
+4.Kubernets 
+https://kubernetes.io/releases/download/
