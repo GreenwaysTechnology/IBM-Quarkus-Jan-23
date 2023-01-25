@@ -5,4 +5,8 @@ Task : 1
  Create Quarkus Projects  using cli,mvn(if you have maven),template
  Test project
  Test HotReloading Feature
+
+Test 2:
+ Create Quarkus Projects build using jvm mode, native mode with all possible ways.
+
  
