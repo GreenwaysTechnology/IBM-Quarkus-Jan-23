@@ -175,8 +175,8 @@ etc....
 Quarkus Architecture with respect specification
 
 
-			       QuarkusApp
-				   |
+			         QuarkusApp
+				    |
 	  		    Quarkus Api/Modules
 				   |
 			    ---------------------------------
@@ -379,7 +379,7 @@ Painfull process in regular development is change code,save,compile,redeloy-
 Quarkus offers hot reloading feature
   Just write code, and save
     Quarkus takes care of compilation,building,redloyment automatically.
-
+.....................................................................................
 
 
 
