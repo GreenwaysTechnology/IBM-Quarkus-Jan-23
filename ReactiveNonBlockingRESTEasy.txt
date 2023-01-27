@@ -296,23 +296,369 @@ Non Reactive Version
     </dependency>
 
 Recommendation is Reactive version, so that our app is enabled with non blocking...
+.....................................................................................
+
+REST API Desgin: RestEasy
+..........................
+
+Concepts:
+1.Resource
+
+What is Resource?
+
+Any information that can be named can be a resource:
+ a document or image, a temporal service (e.g. "today's weather in Los Angeles"), a collection of other resources, a non-virtual object (e.g. a person), and so on. In other words, any concept that might be the target of an author's hypertext reference must fit within the definition of a resource.
+ A resource is a conceptual mapping to a set of entities, not the entity that corresponds to the mapping at any particular point in time.
+
+ "Resource could be any thing but that should be relavent to the problem domain"
+
+What to represent Resource in Program?
+
+ Resource is presented by "class" during compile time and Object during runtime.
+
+Every Resource is Object, Since it is object which has "api"(methods).
+
+Every method will do some action.
+
+Action could be "reterival,add,update,delete"
+
+Every action is controlled by remote software/user through some rules called protocal(http).
+
+Every Action is mapped with Protocal methods -  GET,PUT,DELETE,UPDATE
+
+JAX-RS Annotations:
+
+1.@Path("/api/users")
+2.@GET
+3.@POST
+4.@DELETE
+5.@PUT
+
+Demo: CURD operations
+package com.ibm.rest;
+
+import javax.ws.rs.*;
+
+/**
+ * Resource class must be named as DomainNameResource
+ */
+
+@Path("/api/users")
+public class UserResource {
+
+    @GET
+    public String getUsers(){
+        return "Users";
+    }
+    @POST
+    public String save(){
+        return "Users save";
+    }
+    @PUT
+    public String update(){
+        return "Users update";
+    }
+    @DELETE
+    public String remove(){
+        return "Users remove";
+    }
+}
+.....................................................................................
+			 PATH Parameter
+
+ @Path("/{id}")
+ @PathParam("id") Integer id
+
+package com.ibm.rest;
+
+import javax.ws.rs.*;
+
+/**
+ * Resource class must be named as DomainNameResource
+ */
+
+@Path("/api/users")
+public class UserResource {
+
+    @GET
+    public String getUsers(){
+        return "Users";
+    }
+
+    @GET
+    @Path("/{id}")
+    public String getUserById(@PathParam("id") Integer id) {
+        return "User By Id" + id;
+    }
+    @POST
+    public String save(){
+        return "Users save";
+    }
+    @PUT
+    public String update(){
+        return "Users update";
+    }
+    @DELETE
+    public String remove(){
+        return "Users remove";
+    }
+}
+.....................................................................................
+			Passing data to the REST API
+
+Data can be passed to the end point
+
+1.through url - path parameter,query parameters,matrix parameters
+   data passed
+2.Through body(payload)
+  
+Matrix Parameters: Passing more than one parameter.
+package com.ibm.rest;
+
+import javax.ws.rs.*;
+
+/**
+ * Resource class must be named as DomainNameResource
+ */
+
+@Path("/api/users")
+public class UserResource {
+     //Read Users with state and city
+    //http://localhost:8080/api/users/address;city=Coimbatore;state=Tamil nadu
+    @GET
+    @Path("/address")
+    public String getUserCityAndState(@MatrixParam("city") String city, @MatrixParam("state") String state) {
+        return city + state  ;
+    }
+   
+}
+...................................................................................	
+			Query Parameters
+..................................................................................
+package com.ibm.rest;
+
+import javax.ws.rs.*;
+
+@Path("/api/users")
+public class UserResource {
+
+    @GET
+    public String getUsers(){
+        return "Users";
+    }
+    //http://localhost:8080/api/users/mailphone?mailId=test@gmail.com&mobileNo=0000000
+    @GET
+    @Path("/mailphone")
+    public String getUsersMailAndPhone(@QueryParam("mailId") String mailId, @QueryParam("mobileNo") String mobileNo) {
+        return mailId + mobileNo;
+    }
+}
+.....................................................................................			  DefaultValues Query Parameters
+
+if you dont pass Query parameters ,the default values can be assigned.
+
+   //http://localhost:8080/api/users/mailphone - default values for Query Parameter
+    //http://localhost:8080/api/users/mailphone?mailId=test@gmail.com&mobileNo=0000000
+    @GET
+    @Path("/mailphone")
+    public String getUsersMailAndPhone(@QueryParam("mailId") @DefaultValue("contact@gmail.com") String mailId , @QueryParam("mobileNo") @DefaultValue("1234567890") String mobileNo) {
+        return mailId + mobileNo;
+    }
+.....................................................................................
+				Context Object
+....................................................................................
+
+Context Object provides information about "Running Container" and the application what we have deployed...
+
+How to access context Information?
+@Context 
+
+UriInfo
+HttpHeader information
+package com.ibm.rest;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.UriInfo;
+
+@Path("/api/containerinfo")
+public class ContextResource {
+
+    @GET()
+    @Path("/urls")
+    public String getUriInfo(@Context UriInfo uriInfo) {
+        System.out.println(uriInfo.getAbsolutePath() + " " + uriInfo.getRequestUri());
+        return uriInfo.getAbsolutePath() + " " +uriInfo.getRequestUri();
+    }
+
+    @GET()
+    @Path("/headers")
+    public String getHeaders(@Context HttpHeaders headers) {
+        System.out.println(headers.getRequestHeaders());
+        return headers.getRequestHeaders().toString();
+    }
+}
+.....................................................................................
+				Responses
+.....................................................................................
+
+What can be response?
+
+JAX-RS api can return any of one the type
+ - String  - plain/text
+ - Objects/collections - application/json , XML
+ - Void    - no return type -  only status
+ - Response - Response Object 
+ - Reactive Type -Uni or Multi
 
 
 
+How to return Object?
+  Object has to be converted into Json...
 
 
 
+package com.ibm.rest;
+
+import com.ibm.rest.enity.Customer;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("/api/customers")
+public class CustomerResource {
+
+    //return single Customer
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public Customer getCustomer() {
+        Customer customer = new Customer(1, "Subramanian", "Murugan", "Coimbatore");
+        return customer;
+    }
+}
+
+After running this code?
+ you will get plain string of the object , tostring value of that object
+
+incase of old Quarkus framework...
+After Sending request, you will get error
+
+Could not find MessageBodyWriter for response object of type: com.ibm.rs.response.type.Book of media type:
+application/json
+
+org.jboss.resteasy.core.NoMessageBodyWriterFoundFailure: Could not find MessageBodyWriter for
+ response object of type: com.ibm.rs.response.type.Book of media type: application/json
+
+The Quarkus runtime not able to convert Book object into json 
+
+JSON is nothing but text representation of "Object".
+
+You need to convert Java object to "String"
+
+in order to convert we need special lib.
+
+REST Representations:
+   How response to be represented by Resource to the User
+
+In tradtional webservice, the result would be always XML - SOAP Based webservice.
+In RESTfull webservice the result would be any thing , if user and server agrees upon
+ - JSON Format - most popular data format
+
+What can be Response?
+ String- plain/text
+ Json
+ XML
+.....................................................................................
+        			 Extensions
+.....................................................................................				
+What is extension?
+
+  extension is, project dependency - jar dependency.
+
+By default , you can have extensions when create new project.
+
+Think of Quarkus extensions as your project dependencies.
+
+Extensions configure, boot and integrate a framework or technology into your Quarkus application. 
+
+They also do all of the heavy lifting of providing the right information to GraalVM for your application to compile natively.
+
+How to manage extensions(dependency)?
+
+managment means - add,removing,listing extensions
+
+there are two ways
+
+1.via maven or gradle 
+2.via cli - quarkus
 
 
+List Extensions in the current project
+quarkus  ext ls
+Current Quarkus extensions installed: 
+
+? ArtifactId                                         Extension Name
+? quarkus-resteasy-reactive                          RESTEasy Reactive
 
 
+Adding new Extension:
+quarkus ext add resteasy-reactive-jackson
+[SUCCESS] Extension io.quarkus:quarkus-resteasy-reactive-jackson has been installed
+
+quarkus  ext ls                           
+Current Quarkus extensions installed: 
+
+? ArtifactId                                         Extension Name
+? quarkus-resteasy-reactive                          RESTEasy Reactive
+? quarkus-resteasy-reactive-jackson                  RESTEasy Reactive Jackson
 
 
+Collections: Save and Return:
+.............................
 
+package com.ibm.rest;
 
+import com.ibm.rest.enity.Customer;
 
+import javax.ws.rs.*;
+import javax.ws.rs.core.MediaType;
+import java.util.List;
 
+@Path("/api/customers")
+public class CustomerResource {
 
+    //return single Customer
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public Customer getCustomer() {
+        Customer customer = new Customer(1, "Subramanian", "Murugan", "Coimbatore");
+        return customer;
+    }
+
+    @GET
+    @Path("/list")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<Customer> getCustomerList() {
+        Customer customer = new Customer(1, "Subramanian", "Murugan", "Coimbatore");
+        return List.of(customer, customer, customer);
+    }
+
+    @POST
+    @Path("/save")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Customer save(Customer customer) {
+        System.out.println(customer.getFirstName() + customer.getLastName());
+        return customer;
+    }
+}
+...................................................................................
 
 
 
