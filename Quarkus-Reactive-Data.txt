@@ -1,0 +1,441 @@
+				Database Integration
+...............................................................			    Quarkus Data
+.....................................................................................
+			   Quarkus- ORM
+                         JPA,Hibernate,Panache			
+.....................................................................................
+
+Microservice design pattern called "Database Per Service Pattern" ,According to this Pattern Quarkus implements datasources.
+
+Database Per Service Configuration:
+
+quarkus.datasource."ServiceName".dbProperties=value
+
+
+eg:
+quarkus.datasource.db-kind=h2
+quarkus.datasource.username=username-default
+quarkus.datasource.jdbc.url=jdbc:h2:mem:default
+quarkus.datasource.jdbc.max-size=13
+
+quarkus.datasource.users.db-kind=h2
+quarkus.datasource.users.username=username1
+quarkus.datasource.users.jdbc.url=jdbc:h2:mem:users
+quarkus.datasource.users.jdbc.max-size=11
+
+quarkus.datasource.inventory.db-kind=h2
+quarkus.datasource.inventory.username=username2
+quarkus.datasource.inventory.jdbc.url=jdbc:h2:mem:inventory
+quarkus.datasource.inventory.jdbc.max-size=12
+
+quarkus.datasource.customers.db-kind=postgresql 
+quarkus.datasource.customers.username=<your username>
+quarkus.datasource.customers.password=<your password>
+quarkus.datasource.customers.jdbc.url=jdbc:postgresql://localhost:5432/hibernate_orm_test
+quarkus.datasource.customers.jdbc.max-size=16
+
+
+DbKind: Type of database
+common db-kind value conventions
+
+DB2: db2
+
+Derby: derby
+
+H2: h2
+
+MariaDB: mariadb
+
+Microsoft SQL Server: mssql
+
+MySQL: mysql
+
+Oracle: oracle
+
+PostgreSQL: postgresql, pgsql or pg
+
+Data Source:
+...........
+Agroal data source is default datasource...
+  It is modern,lightweight connection pool implementation designed for high performance.
+  It is similar to Apache DBCP libs.
+
+Data sources are powered with reactive programming
+   Datasoruces are powered with non blocking arch....
+
+Transactions:
+   Quarkus data module offeres transaction implementations.
+   Quarkus implments Narayana as transaction manager
+
+What is Narayana?
+Narayana is a transactions toolkit which provides support for applications developed using a broad range of standards-based transaction protocols:
+
+JTA
+JTS
+Web-Service Transactions
+REST Transactions
+STM
+
+Reactive Data sources:
+  quarkus-reactive-db2-client
+  quarkus-reactive-pg-client
+ etc...
+
+Coding Pattern:
+   Quarkus uses hibernate as low level engine for persistence and built upon JPA   Standards
+   Quarkus uses Panache framework built on top of Hibernate.
+
+			Panache
+			  |
+			 JPA
+			  |
+			Hibernate
+			   
+....................................................................................
+			    JPA With Hibernate
+...................................................................................
+
+Steps:
+
+1.You need database 
+   db2
+   Derby(in-process)
+   H2(in-process)
+   Mariadb
+   mysql
+   postgresql
+
+How to install db for dev?
+
+Two ways
+1.install db server
+2.install via containers -dockers
+
+Quarkus apps  has mode
+
+1.dev mode
+  start db server  
+     standalone
+     via docker
+2.prod mode
+   via containers
+   via vms
+
+
+Quarkus offers features dev services for databases
+...................................................
+If your quaurkus apps runs in dev/test mode, quarkus provides you with a zero config database outof the box,
+ a feature we refer to as "Dev Services"
+
+If you enable dev service for any database, quarkus runs database as part of app within embeded docker container.
+ db2,mariadb,mssql,mysql,oracle,postgresql-dev services enabled database
+
+application.properties
+quarkus.devservices.enabled=true/false
+quarkus.datasource.devservices.enabled=true/false
+
+username and password for dev services:
+.......................................
+postgre,mariadb,mysql,db2,h2 - quarkus,quarkus
+
+
+2.Quarkus orm dependency
+ quarkus-hibernate-orm
+ quarkus-agroal
+ quarkus-jdbc-postgresql
+
+3.JPA Annotations
+  @Entity
+
+4.EntityManager
+.....................................................................................
+
+		NonBlocking REST API,Hibernate API,Database access
+....................................................................................
+
+Steps:
+POM.XML
+   <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-resteasy-reactive</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-reactive-pg-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-hibernate-reactive-panache</artifactId>
+    </dependency>
+
+application.properties:
+quarkus.devservices.enabled=true
+quarkus.datasource.devservices.enabled=true
+
+#Datasource configuration
+quarkus.datasource.db-kind=postgresql
+quarkus.datasource.username=quarkus
+quarkus.datasource.password=quarkus
+
+#Hibernate configuration
+quarkus.hibernate-orm.database.generation=drop-and-create
+quarkus.hibernate-orm.log.sql=true
+quarkus.hibernate-orm.sql-load-script=import.sql
+
+resources/import.sql
+INSERT INTO customer(id,name,city) VALUES(nextval('hibernate_sequence'),'Subramanian','Coimbatore');
+INSERT INTO customer(id,name,city) VALUES(nextval('hibernate_sequence'),'Murugan','Coimbatore');
+INSERT INTO customer(id,name,city) VALUES(nextval('hibernate_sequence'),'Karthik','Chennai');
+
+
+Entity with Panache Framwork:
+package org.ibm.quarkus.data.entity;
+
+import io.quarkus.hibernate.reactive.panache.PanacheEntity;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+
+@Entity
+public class Customer extends PanacheEntity {
+    @Column
+    public String name;
+    @Column
+    public String city;
+
+    public Customer() {
+    }
+
+    public Customer(String name, String city) {
+        this.name = name;
+        this.city = city;
+    }
+}
+
+Resource :
+
+package org.ibm.quarkus.data.resource;
+
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.quarkus.hibernate.reactive.panache.Panache;
+import io.smallrye.mutiny.CompositeException;
+import io.smallrye.mutiny.Uni;
+import org.ibm.quarkus.data.entity.Customer;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import javax.transaction.Transactional;
+import javax.ws.rs.*;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.ExceptionMapper;
+import javax.ws.rs.ext.Provider;
+import java.util.List;
+
+@Path("/api/customers")
+public class CustomerResource {
+
+    @GET
+    public Uni<List<Customer>> get() {
+        return Customer.listAll();
+    }
+
+    @GET
+    @Path("{name}")
+    public Uni<Customer> findByName(@PathParam("name") String name) {
+        return Customer.findByName(name);
+    }
+
+    //Get Customer byId
+    @GET
+    @Path("/byid/{id}")
+    public Uni<Customer> findById(Long id) {
+        return Customer.findById(id);
+    }
+
+    //create /save : Transaction must be enabled when we do add or delete,update
+    //Incase of reactive transaction is enabled via code, in non reactive env
+    //we use @Transactional annoation
+    @POST
+    public Uni<Response> create(Customer customer) {
+        //handle error
+        if (customer == null || customer.name == null) {
+            //throw exception
+            throw new WebApplicationException("Customer Not found", 422);
+        }
+        return Panache
+                .withTransaction(customer::persist)
+                .replaceWith(Response.ok(customer)
+                        .status(Response.Status.CREATED)
+                        .build());
+    }
+    //delete a row
+
+    @DELETE
+    @Path("/byid/{id}")
+    public Uni<Response> delete(Long id) {
+        return Panache
+                .withTransaction(() -> Customer.deleteById(id))
+                .map(deleted -> deleted
+                        ? Response.ok().status(Response.Status.NO_CONTENT).build()
+                        : Response.ok().status(Response.Status.NOT_FOUND).build());
+    }
+
+    //Update
+
+    @PUT
+    @Path("/byid/{id}")
+    public Uni<Response> update(Long id, Customer customer) {
+        if (customer == null || customer.name == null) {
+            throw new WebApplicationException("Customer Not Found", 422);
+        }
+        //Update
+        return Panache.withTransaction(() -> Customer.<Customer>findById(id)
+                .onItem()
+                .ifNotNull()
+                .invoke(entity -> entity.city = customer.city) //update logic
+                .onItem().ifNotNull().transform(entity -> Response.ok(entity).build())
+                .onItem().ifNull().continueWith(Response.ok().status(Response.Status.NOT_FOUND)::build));
+
+    }
+...................................................................................
+		DAO Pattern/Repository Pattern
+
+Steps:
+1.Entity
+package org.ibm.quarkus.data.entity;
+
+//Entity
+
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
+@Entity
+@Table(name = "users")
+public class User {
+    //jpa rules :
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    private String name;
+    private String city;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
+}
+
+2.Repository
+package org.ibm.quarkus.data.entity.repositry;
+
+import io.quarkus.hibernate.reactive.panache.PanacheRepository;
+import org.ibm.quarkus.data.entity.User;
+
+import javax.enterprise.context.ApplicationScoped;
+
+//Panache with DAO/Repository pattern
+@ApplicationScoped
+public class UserRepository implements PanacheRepository<User> {
+    //put custom query
+}
+
+Resource:
+package org.ibm.quarkus.data.resource;
+
+import io.smallrye.mutiny.Uni;
+import org.ibm.quarkus.data.entity.Customer;
+import org.ibm.quarkus.data.entity.User;
+import org.ibm.quarkus.data.entity.repositry.UserRepository;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import java.util.List;
+
+@Path("/api/users")
+public class UserResource {
+    @Inject
+    UserRepository userRepository;
+
+    @GET
+    public Uni<List<User>> get() {
+        return userRepository.listAll();
+    }
+    //CURD operations
+}
+
+resources/import.sql
+INSERT INTO users(id,name,city) VALUES(nextval('hibernate_sequence'),'Subramanian','Coimbatore');
+................................*****************************************************
+
+
+
+
+
+
+
+
+
+    //Error handler
+    @Provider
+    public static class ErrorMapper implements ExceptionMapper<Exception> {
+
+        @Inject
+        ObjectMapper objectMapper;
+
+        @Override
+        public Response toResponse(Exception exception) {
+            System.out.println("Failed to handle Exception");
+            Throwable throwable = exception;
+            int code = 500;
+            if (throwable instanceof WebApplicationException) {
+                //extract the exception code which is thrown by application code
+                code = ((WebApplicationException) exception).getResponse().getStatus();
+            }
+            //How to handle database exception: like if you insert row which is already there
+            //duplicate row.
+            if (throwable instanceof CompositeException) {
+                throwable = ((CompositeException) throwable).getCause();
+            }
+            //
+            ObjectNode exceptionJson = objectMapper.createObjectNode();
+            exceptionJson.put("exceptionType", throwable.getClass().getName());
+            exceptionJson.put("code", code);
+            if (exception.getMessage() != null) {
+                exceptionJson.put("error", throwable.getMessage());
+            }
+            return Response.status(code).entity(exception).build();
+
+        }
+    }
+
+}
+
