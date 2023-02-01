@@ -1,0 +1,393 @@
+  MicroService Service Communications
+
+
+Services are represented by Apis
+
+Apis are modeled in many ways
+
+1.RPI
+    -REST API
+    -RPC - Grpc
+    -GraphQl api
+2.Message based
+    -MOM
+       -redis,RabbitMQ
+    -Event driven Arch
+       Vertx-Event Bus
+       Kafka 
+
+Service Communications:
+
+REST: Rest to Rest - http
+Quarkus Implmementations
+  1.MicroProfile Rest Client -  both reactive and non reactive
+  2.Vertx WebClient - By Default Reactive.
+  3.Java 11 HttpClient - Sync and Async
+
+
+Rest Client Implementation:
+
+Dependency:
+quarkus ext add resteasy-reactive-jackson
+quarkus ext add rest-client-reactive-jackson
+quarkus ext add rest-client-reactive
+
+Communications between services are orachastrated by "RestClient"
+
+Step 1:
+Caller Service:
+package org.acme.rest.client;
+
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+
+@Path("/greet")
+public class GreetingService {
+    
+    @GET
+    public String greet() {
+        return "";
+    }
+}
+
+User -----Gives Request to the caller -- GET /greet
+
+
+
+Step 2:
+
+Callee Service:
+package org.acme.rest.client;
+
+package org.acme;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+
+@Path("/hello")
+public class HelloResource {
+
+    @Inject
+    HelloService helloService;
+
+    @GET
+    public String hello(){
+        return helloService.sayHello();
+    }
+}
+package org.acme.rest.client;
+
+import javax.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+public class HelloService {
+
+    public String sayHello(){
+        return "Hello Rest Client!!!!";
+    }
+}
+..................................................................................
+
+
+Step 3:
+
+RestClient Interface - to facilitate Rest Service Communications.
+
+package org.acme.restcommunicator;
+
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+
+@RegisterRestClient
+@Path("/hello")
+public interface HelloRestClientService {
+    //methods
+    @GET
+    String sayHello();
+}
+
+
+1.Here we need to declare interface
+2.Annotate interface with @RegisterRestClient
+3.@Path("/hello") indicates the callee route url
+4.HTTP method and apis mapping inside interface
+
+
+Step 5:Configuring application.properties
+
+#mapping the rest client
+org.acme.rest.client.HelloRestClientService/mp-rest/url=http://localhost:8080
+org.acme.rest.client.HelloRestClientService/mp-rest/scope=javax.inject.SingleTon
+
+
+Step 6: Inject RestClient Interface into where ever you want to call.
+package org.acme.rest.client;
+
+package org.acme;
+
+import org.acme.restcommunicator.HelloRestClientService;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("/greet")
+public class GreetingResource {
+
+    @Inject
+    @RestClient
+    HelloRestClientService helloRestClientService;
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello() {
+        return helloRestClientService.sayHello();
+    }
+}
+
+Step 7: Testing
+http://localhost:8080/greet
+    It will delegate the request to another http service.
+.....................................................................................
+				Refactored Configuration
+
+package org.acme.restcommunicator;
+
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+
+//@RegisterRestClient
+
+@RegisterRestClient(configKey = "hello-api")
+@Path("/hello")
+public interface HelloRestClientService {
+    //methods
+    @GET
+    String sayHello();
+}
+
+
+#Rest Client configuration
+#org.acme.restcommunicator.HelloRestClientService/mp-rest/url=http://localhost:8080
+#org.acme.restcommunicator.HelloRestClientService/mp-rest/scope=javax.inject.SingleTon
+
+#Refactored configuration
+hello-api/mp-rest/url=http://localhost:8080
+hello-api/mp-rest/scope=javax.inject.Singleton
+..........................................................................
+				Non Blocking(Reactive)
+
+
+Callee:
+package org.acme;
+
+import io.smallrye.mutiny.Uni;
+
+import javax.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+public class HelloService {
+
+    public Uni<String> sayHello(){
+        return Uni.createFrom().item("Hello Uni");
+    }
+}
+Hello Resource:
+package org.acme;
+
+import io.smallrye.mutiny.Uni;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+
+@Path("/hello")
+public class HelloResource {
+
+    @Inject
+    HelloService helloService;
+
+    @GET
+    public Uni<String> hello(){
+        return helloService.sayHello();
+    }
+}
+
+Rest Client:
+package org.acme.restcommunicator;
+
+
+import io.smallrye.mutiny.Uni;
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+
+//@RegisterRestClient
+
+@RegisterRestClient(configKey = "hello-api")
+@Path("/hello")
+public interface HelloRestClientService {
+    //methods
+    @GET
+    Uni<String> sayHello();
+}
+
+Caller :
+package org.acme;
+
+import io.smallrye.mutiny.Uni;
+import org.acme.restcommunicator.HelloRestClientService;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("/greet")
+public class GreetingResource {
+
+    @Inject
+    @RestClient
+    HelloRestClientService helloRestClientService;
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public Uni<String> hello() {
+        return helloRestClientService.sayHello();
+    }
+}
+....................................................................................
+			Service communication via Vertx-WebClient
+....................................................................................
+
+ <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-mutiny-vertx-web-client</artifactId>
+ </dependency>
+ <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx</artifactId>
+ </dependency>
+
+
+Callee:
+package org.acme;
+
+import io.smallrye.mutiny.Uni;
+
+import javax.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+public class HelloService {
+
+    public Uni<String> sayHello(){
+        return Uni.createFrom().item("Hello Uni");
+    }
+
+}
+
+package org.acme;
+
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+
+@Path("/hai")
+public class HaiResource {
+
+    @Inject
+    HaiService haiService;
+
+    @GET
+    public String sayHai() {
+        return haiService.sayHai();
+    }
+}
+
+Caller:
+package org.acme;
+
+import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.ext.web.client.HttpResponse;
+import io.vertx.mutiny.ext.web.client.WebClient;
+import io.vertx.ext.web.client.WebClientOptions;
+import io.vertx.mutiny.core.Vertx;
+import org.acme.restcommunicator.HelloRestClientService;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("/greet")
+public class GreetingResource {
+
+    @Inject
+    @RestClient
+    HelloRestClientService helloRestClientService;
+
+    //Grab Vertx Runtime instance
+    @Inject
+    Vertx vertx;
+
+    WebClient webClient;
+
+    //init
+    @PostConstruct
+    public void init() {
+        //create webclient instance through which you can communicate
+        webClient = WebClient.create(vertx, new WebClientOptions()
+                .setDefaultHost("localhost")
+                .setDefaultPort(8080));
+    }
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public Uni<String> hello() {
+        return helloRestClientService.sayHello();
+    }
+
+    //Access the HaiResource via Vertx Client.
+    @GET
+    @Path("/vertx")
+    public Uni<String> sayHai() {
+        return webClient.get("/hai").send().onItem().transform(HttpResponse::bodyAsString);
+    }
+
+
+}
+.....................................................................................
+			  Message Oriented Communication
+.....................................................................................
+			Service Communications via Messages
+			   (Event Driven Microservices)
+				Using vertx Event Bus
+....................................................................................
+
+	
+
+
+
+
+
+

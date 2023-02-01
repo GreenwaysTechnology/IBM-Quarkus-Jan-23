@@ -1,0 +1,10 @@
+app:
+  message: How are you?
+  remote:
+    host: ibm.com
+    port: 8080
+
+
+greeting:
+  message: Hello Dev!!! ${app.message} coming from ${app.remote.host} ${app.remote.port}
+  name: Subramanian

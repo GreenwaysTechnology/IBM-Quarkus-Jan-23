@@ -1,0 +1,23 @@
+#Custom Properties
+#greeting:
+#  message: Hello Yaml
+#  name: Subramanian
+
+#Built in Properties
+#quarkus:
+#  datasource:
+#     db-kind: postgresql
+#     jdbc:
+#       url: jdbc:postgresql://localhost:5432/testdb
+
+#Profiles
+#"%dev":
+#  greeting:
+#    message: Hello Dev
+#    name: Subramanian
+#
+#"%prod":
+#  greeting:
+#    message: Hello Production
+#    name: Murugan
+

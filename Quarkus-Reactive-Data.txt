@@ -396,15 +396,7 @@ resources/import.sql
 INSERT INTO users(id,name,city) VALUES(nextval('hibernate_sequence'),'Subramanian','Coimbatore');
 ................................*****************************************************
 
-
-
-
-
-
-
-
-
-    //Error handler
+   //Error handler
     @Provider
     public static class ErrorMapper implements ExceptionMapper<Exception> {
 
