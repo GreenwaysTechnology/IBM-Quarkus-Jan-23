@@ -13,3 +13,48 @@ Task 2:
  
 Task 3:
   Create Uni,Mulit Reactive implementations
+....................................................................................
+
+Task 4:
+
+Tech Stack:
+1.Rest api
+2.Quarkus Reactive data with Hibernate Panche-Active RecordPattern
+3.Service Communication - Rest Client
+4.Service Registry and Discovery - Stroke
+5.Service configurations via consule | Env | System
+
+Book Resource , 
+
+BookFrontEnd Resource  
+ api to communicate via Book Resource
+
+Build CURD operations using above tech stack
+
+user --->BookGateWayResource---->Book Resource (database operations)
+			     http via rest client via stroke
+
+profile based configuration
+
+application.yaml 
+   common config
+application-dev.yaml  - port should be 8080
+application-prod.yaml - port should be 9090.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
