@@ -1,0 +1,82 @@
+			Micro service Management Patterns
+.....................................................................................Health Patterns:
+..............
+
+Health Patterns to identity the application health.
+
+Different kinds of Health Checks
+
+Readiness checks defined with @Readiness annotation
+Liveness checks defined with @Liveness annotation
+
+Project dependency:
+quarkus ext add smallrye-health
+
+After adding smallrye health provides some ready made endpoints
+
+/q/health/live
+/q/health/ready
+/q/health/started
+/q/health
+
+Based on some properties ,data ,you can ensure that your service or resources are live and ready.
+
+Simple Health:
+package org.acme.health.services;
+
+import org.eclipse.microprofile.health.HealthCheck;
+import org.eclipse.microprofile.health.HealthCheckResponse;
+import org.eclipse.microprofile.health.Liveness;
+
+import javax.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+@Liveness
+public class SimpleHealthCheck implements HealthCheck {
+
+    @Override
+    public HealthCheckResponse call() {
+        return HealthCheckResponse.up("Simple health Check");
+    }
+}
+
+
+Simulate real database up and running.
+
+package org.acme.health.services;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.health.HealthCheck;
+import org.eclipse.microprofile.health.HealthCheckResponse;
+import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
+import org.eclipse.microprofile.health.Readiness;
+
+import javax.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+@Readiness
+public class DatabaseConnectionHealthCheck implements HealthCheck {
+    @ConfigProperty(name = "database.up", defaultValue = "false")
+    boolean databaseup;
+
+    @Override
+    public HealthCheckResponse call() {
+        //get Db connection and test connection is active or not.
+        HealthCheckResponseBuilder responseBuilder = HealthCheckResponse.named("Database Connection HealthCheck");
+        //simulate database is up and running
+        try {
+            simulateDatabaseConnection();
+            return responseBuilder.up().build();
+        } catch (IllegalStateException exception) {
+            return responseBuilder.down().withData("error", exception.getMessage()).build();
+        }
+    }
+
+    private void simulateDatabaseConnection() {
+        if (!databaseup) {
+            throw new IllegalStateException("Cant connect database");
+        }
+
+    }
+
+}
